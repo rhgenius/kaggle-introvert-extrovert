@@ -42,14 +42,26 @@ class AdvancedFeatureEngineer:
         numeric_cols = X.select_dtypes(include=[np.number]).columns
         
         if len(numeric_cols) > 1:
-            # Row-wise statistics
-            X['row_mean'] = X[numeric_cols].mean(axis=1)
-            X['row_std'] = X[numeric_cols].std(axis=1)
-            X['row_min'] = X[numeric_cols].min(axis=1)
-            X['row_max'] = X[numeric_cols].max(axis=1)
+            # Check if basic features already exist and use consistent naming
+            if 'numeric_mean' not in X.columns:
+                X['row_mean'] = X[numeric_cols].mean(axis=1)
+            if 'numeric_std' not in X.columns:
+                X['row_std'] = X[numeric_cols].std(axis=1)
+            if 'numeric_min' not in X.columns:
+                X['row_min'] = X[numeric_cols].min(axis=1)
+            if 'numeric_max' not in X.columns:
+                X['row_max'] = X[numeric_cols].max(axis=1)
+            
+            # Only create new advanced features
             X['row_median'] = X[numeric_cols].median(axis=1)
             X['row_skew'] = X[numeric_cols].skew(axis=1)
-            X['row_range'] = X['row_max'] - X['row_min']
+            
+            # Use existing max/min if available
+            if 'numeric_max' in X.columns and 'numeric_min' in X.columns:
+                X['row_range'] = X['numeric_max'] - X['numeric_min']
+            elif 'row_max' in X.columns and 'row_min' in X.columns:
+                X['row_range'] = X['row_max'] - X['row_min']
+                
             X['row_iqr'] = X[numeric_cols].quantile(0.75, axis=1) - X[numeric_cols].quantile(0.25, axis=1)
             
             # Count features
@@ -66,18 +78,24 @@ class AdvancedFeatureEngineer:
         numeric_cols = X.select_dtypes(include=[np.number]).columns
         
         for col in numeric_cols:
+            # Skip if transformation already exists
+            if f'{col}_sqrt' in X.columns:
+                continue
+                
             if X[col].skew() > 1:  # Right skewed
-                X[f'{col}_log'] = np.log1p(X[col] - X[col].min() + 1)
+                if f'{col}_log' not in X.columns:
+                    X[f'{col}_log'] = np.log1p(X[col] - X[col].min() + 1)
             
             if X[col].skew() < -1:  # Left skewed
-                X[f'{col}_exp'] = np.expm1(X[col] - X[col].max())
+                if f'{col}_exp' not in X.columns:
+                    X[f'{col}_exp'] = np.expm1(X[col] - X[col].max())
             
             # Square root for positive values
-            if X[col].min() >= 0:
+            if X[col].min() >= 0 and f'{col}_sqrt' not in X.columns:
                 X[f'{col}_sqrt'] = np.sqrt(X[col])
             
             # Box-Cox like transformation
-            if X[col].min() > 0:
+            if X[col].min() > 0 and f'{col}_boxcox' not in X.columns:
                 X[f'{col}_boxcox'] = np.log(X[col])
         
         return X

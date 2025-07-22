@@ -12,6 +12,11 @@ from advanced_feature_engineering import AdvancedFeatureEngineer
 from ensemble_optimizer import EnsembleOptimizer
 from utils import load_data, create_submission, evaluate_model
 
+# Tambahkan import
+from data_augmentation import DataAugmenter
+from sklearn.ensemble import StackingClassifier
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+
 def optimized_training_pipeline():
     """Complete optimized training pipeline"""
     print("=== Optimized Kaggle Training Pipeline ===")

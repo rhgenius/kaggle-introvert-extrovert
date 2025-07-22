@@ -28,6 +28,14 @@ class FeatureEngineer:
         train_processed = train_df.copy()
         test_processed = test_df.copy()
         
+        # Remove ID column if present
+        id_cols = ['id', 'Id', 'ID']
+        for col in id_cols:
+            if col in train_processed.columns:
+                train_processed = train_processed.drop(columns=[col])
+            if col in test_processed.columns:
+                test_processed = test_processed.drop(columns=[col])
+        
         # Get all columns from training set (excluding target)
         base_columns = [col for col in train_processed.columns if col != target_col]
         

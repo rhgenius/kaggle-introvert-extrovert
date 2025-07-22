@@ -43,6 +43,31 @@ def evaluate_model(y_true, y_pred, model_name="Model"):
         'f1_score': f1
     }
 
+def evaluate_model_comprehensive(y_true, y_pred, y_prob=None, model_name="Model"):
+    """Comprehensive model evaluation"""
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+    from sklearn.metrics import roc_auc_score, log_loss, matthews_corrcoef
+    
+    metrics = {}
+    metrics['accuracy'] = accuracy_score(y_true, y_pred)
+    metrics['precision'] = precision_score(y_true, y_pred, average='weighted')
+    metrics['recall'] = recall_score(y_true, y_pred, average='weighted')
+    metrics['f1'] = f1_score(y_true, y_pred, average='weighted')
+    metrics['mcc'] = matthews_corrcoef(y_true, y_pred)  # Matthews correlation coefficient
+    
+    if y_prob is not None:
+        try:
+            metrics['roc_auc'] = roc_auc_score(y_true, y_prob, multi_class='ovr')
+            metrics['log_loss'] = log_loss(y_true, y_prob)
+        except:
+            pass
+    
+    print(f"=== {model_name} Comprehensive Performance ===")
+    for metric, value in metrics.items():
+        print(f"{metric}: {value:.4f}")
+    
+    return metrics
+
 def plot_confusion_matrix(y_true, y_pred, labels=None):
     """
     Plot confusion matrix

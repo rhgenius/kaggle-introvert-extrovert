@@ -19,17 +19,25 @@ class AdvancedFeatureEngineer:
         print("Creating interaction features...")
         
         # Select top numeric features for interactions to avoid explosion
-        numeric_cols = X.select_dtypes(include=[np.number]).columns[:max_features]
+        numeric_cols = X.select_dtypes(include=[np.number]).columns
         
-        if len(numeric_cols) > 1:
-            X_interactions = self.poly_features.fit_transform(X[numeric_cols])
+        # Filter out derived features to avoid duplications
+        original_features = [col for col in numeric_cols if '_' not in col]
+        selected_features = original_features[:max_features]
+        
+        if len(selected_features) > 1:
+            X_interactions = self.poly_features.fit_transform(X[selected_features])
             
             # Get feature names
-            feature_names = self.poly_features.get_feature_names_out(numeric_cols)
+            feature_names = self.poly_features.get_feature_names_out(selected_features)
             X_interactions_df = pd.DataFrame(X_interactions, columns=feature_names, index=X.index)
             
             # Remove original features to avoid duplication
-            interaction_only = X_interactions_df.drop(columns=numeric_cols, errors='ignore')
+            interaction_only = X_interactions_df.drop(columns=selected_features, errors='ignore')
+            
+            # Add prefix to avoid name conflicts with other feature engineering methods
+            renamed_cols = {col: f'poly_{col.replace(" ", "_")}' for col in interaction_only.columns}
+            interaction_only = interaction_only.rename(columns=renamed_cols)
             
             return pd.concat([X, interaction_only], axis=1)
         
@@ -78,6 +86,10 @@ class AdvancedFeatureEngineer:
         numeric_cols = X.select_dtypes(include=[np.number]).columns
         
         for col in numeric_cols:
+            # Periksa apakah kolom ini adalah fitur dasar yang sudah ditransformasi
+            if col.startswith('numeric_') and f'{col.replace("numeric_", "row_")}' in X.columns:
+                continue
+                
             # Skip if transformation already exists
             if f'{col}_sqrt' in X.columns:
                 continue
@@ -138,10 +150,11 @@ class AdvancedFeatureEngineer:
         
         return X
     
-    def select_best_features(self, X_train, y_train, X_test, method='combined', k=50):
+    def select_best_features(self, X_train, y_train, X_test, method='combined', k=75):  # Tingkatkan jumlah fitur
         """Advanced feature selection"""
         print(f"Selecting best {k} features using {method} method...")
         
+        # Implementasi yang sudah ada
         if method == 'statistical':
             selector = SelectKBest(score_func=f_classif, k=k)
             X_train_selected = selector.fit_transform(X_train, y_train)
